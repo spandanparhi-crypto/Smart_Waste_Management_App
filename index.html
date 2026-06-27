@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EcoVision AI – Smart Waste Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root {
+  --primary: #00C853;
+  --primary-glow: rgba(0,200,83,0.4);
+  --primary-dim: rgba(0,200,83,0.15);
+  --secondary: #0B3D2E;
+  --bg-deep: #020E08;
+  --bg-card: rgba(11,61,46,0.45);
+  --bg-card-hover: rgba(0,200,83,0.12);
+  --glass-border: rgba(0,200,83,0.18);
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255,255,255,0.65);
+  --text-muted: rgba(255,255,255,0.38);
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --shadow-glow: 0 0 30px rgba(0,200,83,0.15), 0 8px 32px rgba(0,0,0,0.4);
+  --font-display: 'Sora', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  width: 100%; height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* === SCREEN SYSTEM === */
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateY(20px);
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.screen.active {
+  opacity: 1; pointer-events: auto;
+  transform: translateY(0);
+}
+.screen::-webkit-scrollbar { width: 0; }
+
+/* === SPLASH SCREEN === */
+.splash {
+  align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #0a3022 0%, #041a10 40%, var(--bg-deep) 100%);
+}
+.splash-bg {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+}
+.splash-particle {
+  position: absolute; border-radius: 50%;
+  background: var(--primary); opacity: 0;
+  animation: floatParticle 6s infinite ease-in-out;
+}
+@keyframes floatParticle {
+  0%, 100% { opacity: 0; transform: translateY(0) scale(0.5); }
+  50% { opacity: 0.6; transform: translateY(-80px) scale(1); }
+}
+.splash-circuit {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,83,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,83,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 70%);
+}
+.splash-logo {
+  width: 130px; height: 130px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,200,83,0.2), rgba(11,61,46,0.6));
+  border: 2px solid var(--glass-border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
+  box-shadow: 0 0 60px rgba(0,200,83,0.2), inset 0 0 30px rgba(0,200,83,0.1);
+  animation: logoPulse 3s infinite ease-in-out;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 60px rgba(0,200,83,0.2), inset 0 0 30px rgba(0,200,83,0.1); }
+  50% { box-shadow: 0 0 80px rgba(0,200,83,0.35), inset 0 0 40px rgba(0,200,83,0.15); }
+}
+.splash-logo .leaf { font-size: 40px; margin-right: 6px; }
+.splash-logo .circuit { font-size: 32px; color: var(--primary); }
+.splash-title {
+  font-family: var(--font-display); font-size: 32px; font-weight: 800;
+  margin-top: 28px; letter-spacing: -0.5px; z-index: 2;
+  background: linear-gradient(135deg, #fff 30%, var(--primary));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.splash-subtitle {
+  font-size: 14px; color: var(--text-secondary);
+  margin-top: 8px; letter-spacing: 3px; text-transform: uppercase;
+  font-weight: 300; z-index: 2;
+}
+.splash-loader {
+  position: absolute; bottom: 80px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 2;
+}
+.splash-spinner {
+  width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.splash-loader span {
+  font-size: 13px; color: var(--text-muted); letter-spacing: 2px;
+}
+
+/* === SHARED UI COMPONENTS === */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: rgba(0,200,83,0.3);
+  box-shadow: var(--shadow-glow);
+}
+.glow-text { color: var(--primary); text-shadow: 0 0 20px var(--primary-glow); }
+.section-title {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  margin-bottom: 16px;
+}
+.badge-glow {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--primary-dim); color: var(--primary);
+  padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(0,200,83,0.2);
+}
+
+/* === HEADER BAR === */
+.app-header {
+  padding: 20px 24px 0; display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+  background: linear-gradient(180deg, var(--bg-deep) 60%, transparent);
+  padding-bottom: 16px;
+}
+.app-header .greeting { font-size: 13px; color: var(--text-secondary); }
+.app-header .user-name { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.avatar-sm {
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; border: 2px solid rgba(0,200,83,0.3);
+}
+
+/* === BOTTOM NAV === */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(4,14,8,0.92);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(0,200,83,0.12);
+  display: flex; justify-content: space-around;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  max-width: 100%;
+}
+.bottom-nav.hide { display: none; }
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 16px; border-radius: 16px; cursor: pointer;
+  transition: all 0.3s ease; background: none; border: none;
+  color: var(--text-muted); font-family: var(--font-body); font-size: 11px;
+}
+.nav-item i { font-size: 20px; transition: all 0.3s ease; }
+.nav-item.active { color: var(--primary); }
+.nav-item.active i { filter: drop-shadow(0 0 8px var(--primary-glow)); }
+.nav-item.scan-btn {
+  background: linear-gradient(135deg, var(--primary), #00a844);
+  color: #fff; margin-top: -20px; border-radius: 50%;
+  width: 56px; height: 56px; padding: 0; justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,200,83,0.4);
+  border: 3px solid rgba(0,200,83,0.3);
+}
+.nav-item.scan-btn i { font-size: 22px; }
+.nav-item.scan-btn span { display: none; }
+
+/* === HOME SCREEN === */
+.home-content { padding: 0 20px 100px; }
+.welcome-card {
+  background: linear-gradient(135deg, rgba(0,200,83,0.15), rgba(11,61,46,0.5));
+  border: 1px solid rgba(0,200,83,0.2);
+  border-radius: var(--radius-lg); padding: 24px;
+  margin-bottom: 24px; position: relative; overflow: hidden;
+}
+.welcome-card::before {
+  content: ''; position: absolute; top: -30px; right: -30px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,200,83,0.2), transparent);
+}
+.welcome-card h2 {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 6px;
+}
+.welcome-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+.welcome-stats {
+  display: flex; gap: 16px; margin-top: 18px;
+}
+.welcome-stat {
+  flex: 1; background: rgba(0,0,0,0.25); border-radius: var(--radius-sm);
+  padding: 14px; text-align: center;
+}
+.welcome-stat .num { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--primary); }
+.welcome-stat .label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+.feature-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px;
+}
+.feature-card {
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 20px 16px;
+  cursor: pointer; transition: all 0.35s ease;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,200,83,0.35);
+  box-shadow: 0 8px 30px rgba(0,200,83,0.12);
+}
+.feature-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.feature-icon.green { background: rgba(0,200,83,0.15); color: var(--primary); }
+.feature-icon.blue { background: rgba(56,182,255,0.15); color: #38b6ff; }
+.feature-icon.orange { background: rgba(255,167,38,0.15); color: #ffa726; }
+.feature-icon.purple { background: rgba(171,71,188,0.15); color: #ab47bc; }
+.feature-card h3 { font-size: 14px; font-weight: 600; }
+.feature-card p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* === SCAN SCREEN === */
+.scan-content { padding: 0 20px 100px; }
+.scan-zone {
+  background: linear-gradient(135deg, rgba(0,200,83,0.08), rgba(11,61,46,0.4));
+  border: 2px dashed rgba(0,200,83,0.25);
+  border-radius: var(--radius-lg); padding: 40px 20px;
+  text-align: center; margin-bottom: 24px;
+  cursor: pointer; transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+}
+.scan-zone:hover {
+  border-color: var(--primary);
+  background: rgba(0,200,83,0.06);
+}
+.scan-zone-icon {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: rgba(0,200,83,0.12); margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; color: var(--primary);
+}
+.scan-zone h3 { font-family: var(--font-display); font-size: 18px; margin-bottom: 8px; }
+.scan-zone p { font-size: 13px; color: var(--text-secondary); }
+
+.scan-actions { display: flex; gap: 12px; margin-bottom: 28px; }
+.scan-btn {
+  flex: 1; padding: 16px; border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border); background: var(--bg-card);
+  color: #fff; font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.scan-btn:hover { background: var(--bg-card-hover); border-color: rgba(0,200,83,0.3); }
+.scan-btn.primary {
+  background: linear-gradient(135deg, var(--primary), #00a844);
+  border: none; box-shadow: 0 4px 20px rgba(0,200,83,0.3);
+}
+.scan-btn.primary:hover { box-shadow: 0 6px 30px rgba(0,200,83,0.45); }
+
+.scan-result { display: none; }
+.scan-result.show { display: block; }
+.result-header {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+}
+.result-icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+}
+.result-icon.plastic { background: rgba(255,167,38,0.15); color: #ffa726; }
+.result-icon.paper { background: rgba(139,195,74,0.15); color: #8bc34a; }
+.result-icon.glass { background: rgba(56,182,255,0.15); color: #38b6ff; }
+.result-icon.metal { background: rgba(158,158,158,0.15); color: #9e9e9e; }
+.result-icon.organic { background: rgba(0,200,83,0.15); color: var(--primary); }
+.result-icon.ewaste { background: rgba(171,71,188,0.15); color: #ab47bc; }
+.result-confidence {
+  font-family: var(--font-display); font-size: 28px; font-weight: 800;
+}
+.result-confidence span { font-size: 14px; color: var(--text-secondary); font-weight: 400; }
+.result-details { display: flex; flex-direction: column; gap: 14px; }
+.result-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px; background: rgba(0,0,0,0.2); border-radius: var(--radius-sm);
+}
+.result-row i { color: var(--primary); font-size: 18px; margin-top: 2px; width: 24px; text-align: center; }
+.result-row h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.result-row p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+/* === TIPS SCREEN === */
+.tips-content { padding: 0 20px 100px; }
+.tips-categories {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 16px;
+  margin-bottom: 20px; scrollbar-width: none;
+}
+.tips-categories::-webkit-scrollbar { display: none; }
+.tip-cat {
+  padding: 10px 18px; border-radius: 100px; white-space: nowrap;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-secondary); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.3s ease; flex-shrink: 0;
+}
+.tip-cat.active {
+  background: var(--primary-dim); color: var(--primary);
+  border-color: rgba(0,200,83,0.3);
+}
+.tip-card {
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 20px;
+  margin-bottom: 14px; transition: all 0.3s ease;
+}
+.tip-card:hover { border-color: rgba(0,200,83,0.3); }
+.tip-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.tip-emoji {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.tip-card-header h3 { font-size: 15px; font-weight: 600; }
+.tip-card-header p { font-size: 12px; color: var(--text-muted); }
+.tip-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tip-list li {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+}
+.tip-list li::before {
+  content: '✓'; color: var(--primary); font-weight: 700;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+/* === HISTORY SCREEN === */
+.history-content { padding: 0 20px 100px; }
+.history-filters {
+  display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto;
+  scrollbar-width: none; padding-bottom: 4px;
+}
+.history-filters::-webkit-scrollbar { display: none; }
+.history-item {
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 16px;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 16px;
+  transition: all 0.3s ease; cursor: pointer;
+}
+.history-item:hover { border-color: rgba(0,200,83,0.3); }
+.history-thumb {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.history-info { flex: 1; }
+.history-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.history-info p { font-size: 12px; color: var(--text-muted); }
+.history-meta { text-align: right; }
+.history-meta .points { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--primary); }
+.history-meta .date { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.history-empty {
+  text-align: center; padding: 60px 20px; color: var(--text-muted);
+}
+.history-empty i { font-size: 48px; margin-bottom: 16px; color: rgba(0,200,83,0.2); }
+.history-empty p { font-size: 14px; }
+
+/* === MAP SCREEN === */
+.map-content { padding: 0 20px 100px; }
+.map-container {
+  width: 100%; height: 300px; border-radius: var(--radius-lg);
+  overflow: hidden; border: 1px solid var(--glass-border);
+  margin-bottom: 20px; position: relative;
+  background: var(--bg-card);
+}
+.map-container iframe {
+  width: 100%; height: 100%; border: none;
+  filter: brightness(0.7) contrast(1.1) saturate(0.3) hue-rotate(80deg);
+}
+.map-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 40px rgba(2,14,8,0.6);
+}
+.center-card {
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 18px;
+  margin-bottom: 12px; display: flex; gap: 16px;
+  transition: all 0.3s ease; cursor: pointer;
+}
+.center-card:hover { border-color: rgba(0,200,83,0.3); transform: translateX(4px); }
+.center-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.center-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.center-info p { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.center-info .distance {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--primary); margin-top: 6px;
+}
+
+/* === PROFILE SCREEN === */
+.profile-content { padding: 0 20px 100px; }
+.profile-header {
+  text-align: center; padding: 20px 0 30px;
+}
+.profile-avatar {
+  width: 90px; height: 90px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 800; margin: 0 auto 16px;
+  border: 3px solid rgba(0,200,83,0.3);
+  box-shadow: 0 0 40px rgba(0,200,83,0.2);
+}
+.profile-header h2 { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.profile-header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+.profile-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px;
+}
+.profile-stat {
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 18px; text-align: center;
+}
+.profile-stat .num { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--primary); }
+.profile-stat .label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+.badges-section { margin-bottom: 28px; }
+.badges-grid { display: flex; gap: 12px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.badges-grid::-webkit-scrollbar { display: none; }
+.badge-item {
+  flex-shrink: 0; width: 100px; text-align: center;
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); padding: 18px 12px;
+  transition: all 0.3s ease; cursor: pointer;
+}
+.badge-item:hover { border-color: rgba(0,200,83,0.35); }
+.badge-item .emoji { font-size: 32px; margin-bottom: 8px; }
+.badge-item .name { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+
+.settings-list { display: flex; flex-direction: column; gap: 2px; }
+.settings-item {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px; background: var(--bg-card);
+  border: 1px solid transparent; cursor: pointer;
+  transition: all 0.3s ease;
+}
+.settings-item:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.settings-item:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+.settings-item:only-child { border-radius: var(--radius-md); }
+.settings-item:hover { background: var(--bg-card-hover); }
+.settings-item i { color: var(--text-muted); width: 24px; text-align: center; font-size: 16px; }
+.settings-item span { flex: 1; font-size: 14px; font-weight: 500; }
+.settings-item .chevron { color: var(--text-muted); font-size: 12px; }
+.settings-item.logout { color: #ff5252; }
+.settings-item.logout i { color: #ff5252; }
+
+/* === ANIMATIONS === */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-in { animation: fadeInUp 0.5s ease forwards; }
+.anim-delay-1 { animation-delay: 0.1s; opacity: 0; }
+.anim-delay-2 { animation-delay: 0.2s; opacity: 0; }
+.anim-delay-3 { animation-delay: 0.3s; opacity: 0; }
+.anim-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+/* === PAGE HEADER === */
+.page-header {
+  padding: 20px 24px 16px;
+  position: sticky; top: 0; z-index: 10;
+  background: linear-gradient(180deg, var(--bg-deep) 70%, transparent);
+}
+.page-header h1 {
+  font-family: var(--font-display); font-size: 26px; font-weight: 800;
+}
+.page-header p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Scan progress bar */
+.scan-progress { display: none; margin: 20px 0; }
+.scan-progress.show { display: block; }
+.progress-bar-bg {
+  width: 100%; height: 6px; background: rgba(255,255,255,0.08);
+  border-radius: 100px; overflow: hidden;
+}
+.progress-bar-fill {
+  width: 0%; height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--primary), #69f0ae);
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+.progress-label { font-size: 12px; color: var(--text-secondary); margin-top: 8px; text-align: center; }
+
+/* Image preview */
+.image-preview {
+  display: none; width: 100%; height: 200px; border-radius: var(--radius-md);
+  overflow: hidden; margin-bottom: 20px; position: relative;
+  border: 1px solid var(--glass-border);
+}
+.image-preview.show { display: block; }
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.image-preview .remove-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); border: none; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+  background: rgba(0,200,83,0.15); border: 1px solid rgba(0,200,83,0.3);
+  backdrop-filter: blur(20px); border-radius: var(--radius-sm);
+  padding: 14px 24px; z-index: 1000; font-size: 13px; font-weight: 500;
+  color: var(--primary); transition: transform 0.4s ease;
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Responsive */
+@media (min-width: 480px) {
+  #app { max-width: 420px; margin: 0 auto; border-left: 1px solid rgba(0,200,83,0.08); border-right: 1px solid rgba(0,200,83,0.08); }
+  .bottom-nav { max-width: 420px; left: 50%; transform: translateX(-50%); }
+}
+</style>
+</head>
+<body>
+<!-- Toast -->
+<div class="toast" id="toast"><i class="fas fa-leaf"></i><span id="toast-text"></span></div>
+
+<!-- SPLASH SCREEN -->
+<div class="screen splash active" id="screen-splash">
+  <div class="splash-bg">
+    <div class="splash-circuit"></div>
+  </div>
+  <div class="splash-logo">
+    <span class="leaf">🌿</span>
+    <span class="circuit"><i class="fas fa-microchip"></i></span>
+  </div>
+  <div class="splash-title">EcoVision AI</div>
+  <div class="splash-subtitle">Smart Waste Management</div>
+  <div class="splash-loader">
+    <div class="splash-spinner"></div>
+    <span>Loading...</span>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="screen-home">
+  <div class="app-header">
+    <div>
+      <div class="greeting">Good morning,</div>
+      <div class="user-name">Alex Green</div>
+    </div>
+    <div class="avatar-sm">A</div>
+  </div>
+  <div class="home-content">
+    <div class="welcome-card anim-in">
+      <div class="badge-glow" style="margin-bottom:14px"><i class="fas fa-sparkles"></i> AI-Powered</div>
+      <h2>Your Eco Dashboard</h2>
+      <p>Track your recycling impact and make a difference for the planet.</p>
+      <div class="welcome-stats">
+        <div class="welcome-stat">
+          <div class="num" id="total-scans-home">47</div>
+          <div class="label">Total Scans</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="num">312</div>
+          <div class="label">Eco Points</div>
+        </div>
+        <div class="welcome-stat">
+          <div class="num">12</div>
+          <div class="label">Streak Days</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Quick Actions</div>
+    <div class="feature-grid">
+      <div class="feature-card" onclick="navigateTo('scan')">
+        <div class="feature-icon green"><i class="fas fa-camera"></i></div>
+        <div>
+          <h3>AI Waste Scanner</h3>
+          <p>Identify waste types instantly</p>
+        </div>
+      </div>
+      <div class="feature-card" onclick="navigateTo('tips')">
+        <div class="feature-icon blue"><i class="fas fa-lightbulb"></i></div>
+        <div>
+          <h3>Recycling Tips</h3>
+          <p>Learn best practices</p>
+        </div>
+      </div>
+      <div class="feature-card" onclick="navigateTo('history')">
+        <div class="feature-icon orange"><i class="fas fa-clock-rotate-left"></i></div>
+        <div>
+          <h3>Waste History</h3>
+          <p>View past scans & impact</p>
+        </div>
+      </div>
+      <div class="feature-card" onclick="navigateTo('map')">
+        <div class="feature-icon purple"><i class="fas fa-map-location-dot"></i></div>
+        <div>
+          <h3>Nearby Centers</h3>
+          <p>Find recycling spots</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Recent Activity</div>
+    <div class="history-item" onclick="navigateTo('history')">
+      <div class="history-thumb" style="background:rgba(255,167,38,0.12);color:#ffa726"><i class="fas fa-bottle-water"></i></div>
+      <div class="history-info">
+        <h4>Plastic Bottle</h4>
+        <p>Recyclable - Rinse before disposal</p>
+      </div>
+      <div class="history-meta">
+        <div class="points">+8 pts</div>
+        <div class="date">2h ago</div>
+      </div>
+    </div>
+    <div class="history-item" onclick="navigateTo('history')">
+      <div class="history-thumb" style="background:rgba(139,195,74,0.12);color:#8bc34a"><i class="fas fa-newspaper"></i></div>
+      <div class="history-info">
+        <h4>Paper Cardboard</h4>
+        <p>Recyclable - Flatten before bin</p>
+      </div>
+      <div class="history-meta">
+        <div class="points">+5 pts</div>
+        <div class="date">5h ago</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCAN SCREEN -->
+<div class="screen" id="screen-scan">
+  <div class="page-header">
+    <h1>AI Scanner</h1>
+    <p>Identify waste & get recycling guidance</p>
+  </div>
+  <div class="scan-content">
+    <div class="image-preview" id="image-preview">
+      <img id="preview-img" src="" alt="Preview">
+      <button class="remove-btn" onclick="removeImage()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="scan-zone" id="scan-zone" onclick="document.getElementById('file-input').click()">
+      <div class="scan-zone-icon"><i class="fas fa-qrcode"></i></div>
+      <h3>Scan Your Waste</h3>
+      <p>Take a photo or select from gallery to identify waste type</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+
+    <div class="scan-actions">
+      <button class="scan-btn primary" onclick="document.getElementById('file-input').click()">
+        <i class="fas fa-camera"></i> Camera
+      </button>
+      <button class="scan-btn" onclick="document.getElementById('file-input').click()">
+        <i class="fas fa-images"></i> Gallery
+      </button>
+    </div>
+
+    <div class="scan-progress" id="scan-progress">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      <div class="progress-label" id="progress-label">Analyzing image...</div>
+    </div>
+
+    <div class="scan-result" id="scan-result">
+      <!-- Filled by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- TIPS SCREEN -->
+<div class="screen" id="screen-tips">
+  <div class="page-header">
+    <h1>Recycling Tips</h1>
+    <p>Learn how to properly recycle each material</p>
+  </div>
+  <div class="tips-content">
+    <div class="tips-categories" id="tips-categories">
+      <div class="tip-cat active" data-cat="plastic">🧴 Plastic</div>
+      <div class="tip-cat" data-cat="paper">📄 Paper</div>
+      <div class="tip-cat" data-cat="glass">🫙 Glass</div>
+      <div class="tip-cat" data-cat="metal">🥫 Metal</div>
+      <div class="tip-cat" data-cat="organic">🍎 Organic</div>
+      <div class="tip-cat" data-cat="ewaste">💻 E-Waste</div>
+    </div>
+    <div id="tips-list"></div>
+  </div>
+</div>
+
+<!-- HISTORY SCREEN -->
+<div class="screen" id="screen-history">
+  <div class="page-header">
+    <h1>Scan History</h1>
+    <p>Your waste identification log</p>
+  </div>
+  <div class="history-content">
+    <div class="history-filters">
+      <div class="tip-cat active" data-filter="all">All</div>
+      <div class="tip-cat" data-filter="plastic">Plastic</div>
+      <div class="tip-cat" data-filter="paper">Paper</div>
+      <div class="tip-cat" data-filter="glass">Glass</div>
+      <div class="tip-cat" data-filter="metal">Metal</div>
+      <div class="tip-cat" data-filter="organic">Organic</div>
+      <div class="tip-cat" data-filter="ewaste">E-Waste</div>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- MAP SCREEN -->
+<div class="screen" id="screen-map">
+  <div class="page-header">
+    <h1>Nearby Centers</h1>
+    <p>Find recycling points around you</p>
+  </div>
+  <div class="map-content">
+    <div class="map-container">
+      <iframe src="https://www.openstreetmap.org/export/embed.html?bbox=-0.15,51.50,-0.08,51.53&layer=mapnik" loading="lazy"></iframe>
+      <div class="map-overlay"></div>
+    </div>
+    <div class="section-title">Recycling Points</div>
+    <div class="center-card">
+      <div class="center-icon" style="background:rgba(0,200,83,0.12);color:var(--primary)"><i class="fas fa-recycle"></i></div>
+      <div class="center-info">
+        <h4>Green Valley Recycling Hub</h4>
+        <p>Accepts all material types. Open Mon-Sat 8AM-6PM.</p>
+        <div class="distance"><i class="fas fa-location-dot"></i> 0.3 km away</div>
+      </div>
+    </div>
+    <div class="center-card">
+      <div class="center-icon" style="background:rgba(56,182,255,0.12);color:#38b6ff"><i class="fas fa-trash-can"></i></div>
+      <div class="center-info">
+        <h4>Smart Bin - Central Park</h4>
+        <p>AI-sorted smart bin with auto-compaction.</p>
+        <div class="distance"><i class="fas fa-location-dot"></i> 0.7 km away</div>
+      </div>
+    </div>
+    <div class="center-card">
+      <div class="center-icon" style="background:rgba(171,71,188,0.12);color:#ab47bc"><i class="fas fa-microchip"></i></div>
+      <div class="center-info">
+        <h4>E-Waste Collection Point</h4>
+        <p>Electronics, batteries, and hazardous waste accepted.</p>
+        <div class="distance"><i class="fas fa-location-dot"></i> 1.2 km away</div>
+      </div>
+    </div>
+    <div class="center-card">
+      <div class="center-icon" style="background:rgba(255,167,38,0.12);color:#ffa726"><i class="fas fa-industry"></i></div>
+      <div class="center-info">
+        <h4>City Waste Processing Center</h4>
+        <p>Large-scale recycling and composting facility.</p>
+        <div class="distance"><i class="fas fa-location-dot"></i> 2.5 km away</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SCREEN -->
+<div class="screen" id="screen-profile">
+  <div class="page-header">
+    <h1>Profile</h1>
+  </div>
+  <div class="profile-content">
+    <div class="profile-header">
+      <div class="profile-avatar">A</div>
+      <h2>Alex Green</h2>
+      <p><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d1b0bdb4a9ffb6a3b4b4bf91b4b2bea7b8a2b8bebfffb0b8">[email&#160;protected]</a></p>
+    </div>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="num" id="profile-scans">47</div>
+        <div class="label">Scans</div>
+      </div>
+      <div class="profile-stat">
+        <div class="num">312</div>
+        <div class="label">Eco Points</div>
+      </div>
+      <div class="profile-stat">
+        <div class="num">5</div>
+        <div class="label">Badges</div>
+      </div>
+    </div>
+
+    <div class="section-title">Achievements</div>
+    <div class="badges-section">
+      <div class="badges-grid">
+        <div class="badge-item"><div class="emoji">🌱</div><div class="name">First Scan</div></div>
+        <div class="badge-item"><div class="emoji">♻️</div><div class="name">10 Recycles</div></div>
+        <div class="badge-item"><div class="emoji">🔥</div><div class="name">7-Day Streak</div></div>
+        <div class="badge-item"><div class="emoji">🏆</div><div class="name">50 Points</div></div>
+        <div class="badge-item"><div class="emoji">🌍</div><div class="name">Eco Hero</div></div>
+      </div>
+    </div>
+
+    <div class="section-title">Settings</div>
+    <div class="settings-list">
+      <div class="settings-item" onclick="showToast('Notifications enabled')">
+        <i class="fas fa-bell"></i><span>Notifications</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item" onclick="showToast('Dark mode active')">
+        <i class="fas fa-moon"></i><span>Appearance</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item" onclick="showToast('Language settings')">
+        <i class="fas fa-globe"></i><span>Language</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item" onclick="showToast('Privacy settings')">
+        <i class="fas fa-shield-halved"></i><span>Privacy & Security</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item" onclick="showToast('Help center')">
+        <i class="fas fa-circle-question"></i><span>Help & Support</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item" onclick="showToast('About EcoVision AI v1.0')">
+        <i class="fas fa-info-circle"></i><span>About</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+      <div class="settings-item logout" onclick="showToast('Logged out successfully')">
+        <i class="fas fa-right-from-bracket"></i><span>Logout</span><i class="fas fa-chevron-right chevron"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav hide" id="bottom-nav">
+  <button class="nav-item active" data-screen="home">
+    <i class="fas fa-house"></i><span>Home</span>
+  </button>
+  <button class="nav-item" data-screen="tips">
+    <i class="fas fa-lightbulb"></i><span>Tips</span>
+  </button>
+  <button class="nav-item scan-btn" data-screen="scan">
+    <i class="fas fa-camera"></i><span>Scan</span>
+  </button>
+  <button class="nav-item" data-screen="history">
+    <i class="fas fa-clock-rotate-left"></i><span>History</span>
+  </button>
+  <button class="nav-item" data-screen="profile">
+    <i class="fas fa-user"></i><span>Profile</span>
+  </button>
+</nav>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ===== DATA =====
+const tipsData = {
+  plastic: [
+    { title: 'Bottles & Containers', emoji: '🧴', color: 'rgba(255,167,38,0.12)', tips: ['Rinse containers before recycling to remove residue', 'Remove caps and labels when possible', 'Crush bottles to save space in recycling bins', 'Never bag recyclables in plastic bags'] },
+    { title: 'Plastic Bags & Film', emoji: '🛍️', color: 'rgba(255,167,38,0.12)', tips: ['Return plastic bags to store drop-off locations', 'Do not place in curbside recycling bins', 'Reuse bags multiple times before disposing', 'Consider switching to reusable bags'] },
+    { title: 'Food Containers', emoji: '🥡', color: 'rgba(255,167,38,0.12)', tips: ['Check resin code - #1 and #2 are widely accepted', 'Clean out food residue thoroughly', 'Avoid recycling black plastic containers', 'Consider compostable alternatives'] }
+  ],
+  paper: [
+    { title: 'Newspapers & Magazines', emoji: '📰', color: 'rgba(139,195,74,0.12)', tips: ['Keep dry and clean for best recycling quality', 'Remove plastic wrapping before recycling', 'Stack neatly to save collection space', 'Glossy paper is recyclable in most programs'] },
+    { title: 'Cardboard', emoji: '📦', color: 'rgba(139,195,74,0.12)', tips: ['Flatten all boxes before placing in bin', 'Remove tape and packing materials', 'Keep dry - wet cardboard is harder to process', 'Cut large boxes into smaller pieces'] },
+    { title: 'Office Paper', emoji: '📄', color: 'rgba(139,195,74,0.12)', tips: ['Remove staples and binder clips', 'Shred sensitive documents before recycling', 'Use both sides of paper to reduce waste', 'Consider going digital to reduce paper use'] }
+  ],
+  glass: [
+    { title: 'Bottles & Jars', emoji: '🍾', color: 'rgba(56,182,255,0.12)', tips: ['Rinse thoroughly before recycling', 'Remove metal lids and caps separately', 'Sort by color if your program requires it', 'Glass can be recycled infinitely without quality loss'] },
+    { title: 'Broken Glass', emoji: '💔', color: 'rgba(56,182,255,0.12)', tips: ['Wrap broken glass in newspaper before disposal', 'Label the package clearly for safety', 'Most curbside programs do not accept broken glass', 'Take to designated recycling centers'] },
+    { title: 'Specialty Glass', emoji: '🔬', color: 'rgba(56,182,255,0.12)', tips: ['Pyrex and tempered glass have different melting points', 'Light bulbs need special handling - check local rules', 'Window glass cannot be recycled with containers', 'Mirror glass requires separate processing'] }
+  ],
+  metal: [
+    { title: 'Aluminum Cans', emoji: '🥫', color: 'rgba(158,158,158,0.12)', tips: ['Rinse cans before recycling', 'You do not need to crush cans', 'Aluminum can be recycled forever without quality loss', 'Recycling aluminum saves 95% of energy vs. new production'] },
+    { title: 'Steel & Tin Cans', emoji: '🫙', color: 'rgba(158,158,158,0.12)', tips: ['Remove labels when easy to do', 'Magnetic - steel cans stick to magnets', 'Rinse food residue before recycling', 'Lids can be placed inside the can'] },
+    { title: 'Scrap Metal', emoji: '🔧', color: 'rgba(158,158,158,0.12)', tips: ['Take scrap metal to designated facilities', 'Clean metals fetch better recycling value', 'Separate ferrous from non-ferrous metals', 'Check with local centers for accepted items'] }
+  ],
+  organic: [
+    { title: 'Food Scraps', emoji: '🍎', color: 'rgba(0,200,83,0.12)', tips: ['Compost fruit and vegetable peels at home', 'Avoid composting meat and dairy in home bins', 'Use a kitchen compost caddy for convenience', 'Coffee grounds and tea bags are great for compost'] },
+    { title: 'Yard Waste', emoji: '🌿', color: 'rgba(0,200,83,0.12)', tips: ['Leave grass clippings on the lawn as natural fertilizer', 'Compost leaves and small branches', 'Check municipal yard waste collection schedules', 'Mulch garden waste to reduce volume'] },
+    { title: 'Composting Tips', emoji: '🪴', color: 'rgba(0,200,83,0.12)', tips: ['Balance green (nitrogen) and brown (carbon) materials', 'Turn compost regularly for faster decomposition', 'Keep compost moist but not waterlogged', 'Avoid composting diseased plants'] }
+  ],
+  ewaste: [
+    { title: 'Phones & Tablets', emoji: '📱', color: 'rgba(171,71,188,0.12)', tips: ['Factory reset before recycling or donating', 'Use manufacturer take-back programs', 'Many retailers offer trade-in programs', 'Remove SIM cards and external storage'] },
+    { title: 'Batteries', emoji: '🔋', color: 'rgba(171,71,188,0.12)', tips: ['Never throw batteries in regular trash', 'Use designated battery collection points', 'Tape lithium battery terminals for safety', 'Rechargeable batteries are preferred over disposables'] },
+    { title: 'Computers & Peripherals', emoji: '💻', color: 'rgba(171,71,188,0.12)', tips: ['Back up and wipe all data before disposal', 'Many e-waste centers accept computers for free', 'Consider donating working equipment', 'Remove personal data from printers and copiers'] }
+  ]
+};
+
+const wasteResults = {
+  plastic: { type: 'Plastic', icon: 'fas fa-bottle-water', emoji: '🧴', confidence: 94, cls: 'plastic', instructions: 'Rinse thoroughly. Remove cap and label. Place in recycling bin.', impact: 'Saves 1.5 kg of CO₂ per bottle recycled. Decomposes in 450 years if not recycled.', disposal: 'Curbside recycling bin. Ensure clean and dry.' },
+  paper: { type: 'Paper/Cardboard', icon: 'fas fa-newspaper', emoji: '📄', confidence: 97, cls: 'paper', instructions: 'Flatten if possible. Remove tape and packing materials.', impact: 'Recycling 1 ton of paper saves 17 trees and 7,000 gallons of water.', disposal: 'Paper recycling bin. Keep dry and clean.' },
+  glass: { type: 'Glass', icon: 'fas fa-wine-bottle', emoji: '🍾', confidence: 91, cls: 'glass', instructions: 'Rinse container. Separate by color if required. Remove lids.', impact: 'Glass can be recycled infinitely. Saves 1.2 kg CO₂ per bottle.', disposal: 'Glass recycling bin or designated collection point.' },
+  metal: { type: 'Metal', icon: 'fas fa-ring', emoji: '🥫', confidence: 88, cls: 'metal', instructions: 'Rinse clean. Labels can stay. Place in recycling bin.', impact: 'Recycling aluminum saves 95% energy vs. producing new aluminum.', disposal: 'Curbside recycling. Separate from other materials.' },
+  organic: { type: 'Organic Waste', icon: 'fas fa-seedling', emoji: '🍎', confidence: 96, cls: 'organic', instructions: 'Place in compost bin. Avoid mixing with plastics.', impact: 'Composting reduces methane emissions from landfills by up to 50%.', disposal: 'Compost bin or organic waste collection. Not regular recycling.' },
+  ewaste: { type: 'Electronic Waste', icon: 'fas fa-microchip', emoji: '💻', confidence: 92, cls: 'ewaste', instructions: 'Do not throw in regular trash. Bring to e-waste collection point.', impact: 'Proper recycling recovers gold, silver, and rare earth metals.', disposal: 'E-waste collection center or manufacturer take-back program.' }
+};
+
+const historyData = [
+  { type: 'plastic', name: 'Plastic Bottle', desc: 'Recyclable - Rinse before disposal', points: 8, date: '2h ago', icon: 'fas fa-bottle-water' },
+  { type: 'paper', name: 'Paper Cardboard', desc: 'Recyclable - Flatten before bin', points: 5, date: '5h ago', icon: 'fas fa-newspaper' },
+  { type: 'organic', name: 'Apple Core', desc: 'Compostable - Green bin', points: 3, date: 'Yesterday', icon: 'fas fa-apple-whole' },
+  { type: 'glass', name: 'Glass Jar', desc: 'Recyclable - Rinse thoroughly', points: 6, date: 'Yesterday', icon: 'fas fa-wine-bottle' },
+  { type: 'metal', name: 'Aluminum Can', desc: 'Recyclable - No need to crush', points: 7, date: '2 days ago', icon: 'fas fa-ring' },
+  { type: 'ewaste', name: 'Old USB Cable', desc: 'E-waste - Take to collection point', points: 12, date: '3 days ago', icon: 'fas fa-plug' },
+  { type: 'plastic', name: 'Food Container', desc: 'Check resin code #5 - recyclable', points: 6, date: '3 days ago', icon: 'fas fa-box' },
+  { type: 'paper', name: 'Magazine', desc: 'Recyclable - Remove plastic wrap', points: 4, date: '4 days ago', icon: 'fas fa-book-open' },
+];
+
+// ===== STATE =====
+let currentScreen = 'splash';
+let totalScans = 47;
+let currentTipCat = 'plastic';
+
+// ===== NAVIGATION =====
+function navigateTo(screen) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + screen).classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-screen="${screen}"]`);
+  if (navItem) navItem.classList.add('active');
+  currentScreen = screen;
+  if (screen === 'tips') renderTips(currentTipCat);
+  if (screen === 'history') renderHistory('all');
+}
+
+// ===== SPLASH SCREEN =====
+function initSplash() {
+  const bg = document.querySelector('.splash-bg');
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'splash-particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.width = p.style.height = (Math.random() * 6 + 2) + 'px';
+    p.style.animationDelay = (Math.random() * 6) + 's';
+    p.style.animationDuration = (Math.random() * 4 + 4) + 's';
+    bg.appendChild(p);
+  }
+  setTimeout(() => {
+    document.getElementById('screen-splash').classList.remove('active');
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('bottom-nav').classList.remove('hide');
+    currentScreen = 'home';
+  }, 3000);
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== SCAN FUNCTIONALITY =====
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    document.getElementById('preview-img').src = ev.target.result;
+    document.getElementById('image-preview').classList.add('show');
+    document.getElementById('scan-zone').style.display = 'none';
+    startScan();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  document.getElementById('image-preview').classList.remove('show');
+  document.getElementById('scan-zone').style.display = '';
+  document.getElementById('scan-result').classList.remove('show');
+  document.getElementById('scan-progress').classList.remove('show');
+  document.getElementById('file-input').value = '';
+}
+
+function startScan() {
+  const progress = document.getElementById('scan-progress');
+  const fill = document.getElementById('progress-fill');
+  const label = document.getElementById('progress-label');
+  progress.classList.add('show');
+  document.getElementById('scan-result').classList.remove('show');
+
+  const stages = [
+    { pct: 25, text: 'Preprocessing image...' },
+    { pct: 50, text: 'Running AI model...' },
+    { pct: 75, text: 'Classifying waste type...' },
+    { pct: 100, text: 'Generating results...' }
+  ];
+
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < stages.length) {
+      fill.style.width = stages[i].pct + '%';
+      label.textContent = stages[i].text;
+      i++;
+    } else {
+      clearInterval(interval);
+      setTimeout(() => showResult(), 400);
+    }
+  }, 600);
+}
+
+function showResult() {
+  const types = Object.keys(wasteResults);
+  const key = types[Math.floor(Math.random() * types.length)];
+  const r = wasteResults[key];
+
+  document.getElementById('scan-progress').classList.remove('show');
+  const el = document.getElementById('scan-result');
+  el.innerHTML = `
+    <div class="glass-card">
+      <div class="result-header">
+        <div class="result-icon ${r.cls}"><i class="${r.icon}"></i></div>
+        <div>
+          <div style="font-size:13px;color:var(--text-secondary)">Detected: <strong>${r.type}</strong></div>
+          <div class="result-confidence">${r.confidence}% <span>confidence</span></div>
+        </div>
+      </div>
+      <div class="result-details">
+        <div class="result-row">
+          <i class="fas fa-clipboard-list"></i>
+          <div><h4>Recycling Instructions</h4><p>${r.instructions}</p></div>
+        </div>
+        <div class="result-row">
+          <i class="fas fa-earth-americas"></i>
+          <div><h4>Environmental Impact</h4><p>${r.impact}</p></div>
+        </div>
+        <div class="result-row">
+          <i class="fas fa-trash-arrow-up"></i>
+          <div><h4>Disposal Recommendation</h4><p>${r.disposal}</p></div>
+        </div>
+      </div>
+      <div style="margin-top:18px;text-align:center;">
+        <button class="scan-btn primary" style="width:100%" onclick="saveScan('${key}')">
+          <i class="fas fa-check"></i> Save to History (+${Math.floor(r.confidence / 10)} pts)
+        </button>
+      </div>
+    </div>
+  `;
+  el.classList.add('show');
+}
+
+function saveScan(type) {
+  totalScans++;
+  document.getElementById('total-scans-home').textContent = totalScans;
+  document.getElementById('profile-scans').textContent = totalScans;
+  const r = wasteResults[type];
+  const pts = Math.floor(r.confidence / 10);
+  historyData.unshift({
+    type: type,
+    name: r.type,
+    desc: r.instructions.substring(0, 40) + '...',
+    points: pts,
+    date: 'Just now',
+    icon: r.icon
+  });
+  showToast(`Saved! +${pts} eco points earned`);
+  if (currentScreen === 'history') renderHistory('all');
+}
+
+// ===== TIPS =====
+function renderTips(cat) {
+  currentTipCat = cat;
+  document.querySelectorAll('#tips-categories .tip-cat').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  const list = document.getElementById('tips-list');
+  const data = tipsData[cat] || [];
+  list.innerHTML = data.map(t => `
+    <div class="tip-card">
+      <div class="tip-card-header">
+        <div class="tip-emoji" style="background:${t.color}">${t.emoji}</div>
+        <div><h3>${t.title}</h3><p>${t.tips.length} tips</p></div>
+      </div>
+      <ul class="tip-list">
+        ${t.tips.map(tip => `<li>${tip}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+}
+
+// ===== HISTORY =====
+let historyFilter = 'all';
+function renderHistory(filter) {
+  historyFilter = filter;
+  document.querySelectorAll('.history-filters .tip-cat').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === filter);
+  });
+  const list = document.getElementById('history-list');
+  const items = filter === 'all' ? historyData : historyData.filter(h => h.type === filter);
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-inbox"></i><p>No scans in this category yet.</p></div>';
+    return;
+  }
+
+  const colorMap = { plastic: ['#ffa726','rgba(255,167,38,0.12)'], paper: ['#8bc34a','rgba(139,195,74,0.12)'], glass: ['#38b6ff','rgba(56,182,255,0.12)'], metal: ['#9e9e9e','rgba(158,158,158,0.12)'], organic: ['#00C853','rgba(0,200,83,0.12)'], ewaste: ['#ab47bc','rgba(171,71,188,0.12)'] };
+
+  list.innerHTML = items.map(h => {
+    const [col, bg] = colorMap[h.type] || ['#fff','rgba(255,255,255,0.08)'];
+    return `
+    <div class="history-item">
+      <div class="history-thumb" style="background:${bg};color:${col}"><i class="${h.icon}"></i></div>
+      <div class="history-info">
+        <h4>${h.name}</h4>
+        <p>${h.desc}</p>
+      </div>
+      <div class="history-meta">
+        <div class="points">+${h.points} pts</div>
+        <div class="date">${h.date}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== EVENT LISTENERS =====
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => navigateTo(btn.dataset.screen));
+});
+
+document.querySelectorAll('#tips-categories .tip-cat').forEach(el => {
+  el.addEventListener('click', () => renderTips(el.dataset.cat));
+});
+
+document.querySelectorAll('.history-filters .tip-cat').forEach(el => {
+  el.addEventListener('click', () => renderHistory(el.dataset.filter));
+});
+
+// ===== INIT =====
+initSplash();
+</script>
+</body>
+</html>
